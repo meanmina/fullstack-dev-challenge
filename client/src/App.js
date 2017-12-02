@@ -8,7 +8,7 @@ class App extends Component {
   constructor(props) {
     super(props)
 
-    this.months = 4//50*12
+    this.months = 10//50*12
     this.savings = []
     this.state = {
               deposit: 0,
@@ -45,7 +45,14 @@ class App extends Component {
     var savedAmount = this.state.deposit
     var monthlyInterestRate = parseFloat((this.state.interest/100)/12)
     for (var i = 1; i <= this.months; i++) {
-      this.savings.push({month: i, amount: savedAmount})
+      // add the monthly savings
+      if (this.state.monthlySavings > 0)
+        savedAmount = savedAmount + this.state.monthlySavings
+      // add the monthy interest
+      var monthlyInterest = savedAmount * monthlyInterestRate
+      savedAmount = savedAmount + monthlyInterest
+      var earnings = parseFloat(savedAmount).toFixed(4)
+      this.savings.push({month: i, amount: earnings})
     }
 
     return (

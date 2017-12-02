@@ -80,6 +80,10 @@ it('renders correct savings', () => {
   expect(app.savings).toBeTruthy()
   expect(app.savings.length).toEqual(3)
 
+  var total = app.state.deposit + app.state.monthlySavings
+  var interestRate = parseFloat((app.state.interest/100)/12)
+  var totalInterest = total * interestRate
+  var expectedSaving = total + totalInterest
   expect(app.savings[0].month).toEqual(1)
-  expect(app.savings[0].amount).toEqual(10)
+  expect(app.savings[0].amount).toEqual(parseFloat(expectedSaving).toFixed(4))
 });
