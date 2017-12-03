@@ -12,7 +12,7 @@ class App extends Component {
   constructor(props) {
     super(props)
 
-    this.months = 12//50*12
+    this.months = 50*12
     this.savings = []
     this.state = {
               deposit: 0,
@@ -29,6 +29,12 @@ class App extends Component {
 
   setNumMonths(months) {
     this.months = months
+    this.requestSavings(this.state.deposit,
+                        this.state.interest,
+                        this.months,
+                        this.state.monthlySavings,
+                        this.state.interestFrequency.numMonths,
+                        this.state.currency.exchangeRate)
   }
 
   updateDeposit({ target }) {
@@ -93,6 +99,7 @@ class App extends Component {
     this.setState(state)
   }
 
+  // we can use react-select for currency pick if we want a longer list of options
   updateCurrency({ target }) {
     var currency = this.getCurrency(parseFloat(target.value))
     var exchangeRate = 1
