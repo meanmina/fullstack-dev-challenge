@@ -57,6 +57,17 @@ it('updateInterest updates interest value', () => {
   expect(app.state.interest).toEqual(new_value);
 });
 
+it('updateFrequency updates interestFrequency value', () => {
+  const app = shallow(<App />).instance();
+
+  var new_value = 2;
+  app.updateFrequency({target: {value: new_value}});
+
+  expect(app.state.interestFrequency.value).toEqual(new_value);
+  expect(app.state.interestFrequency.name).toEqual("Quarterly");
+  expect(app.state.interestFrequency.numMonths).toEqual(3);
+});
+
 it('setNumMonths updates number of months', () => {
   const app = shallow(<App />).instance();
 
@@ -86,4 +97,34 @@ it('renders correct savings', () => {
   var expectedSaving = total + totalInterest
   expect(app.savings[0].month).toEqual(1)
   expect(app.savings[0].amount).toEqual(parseFloat(expectedSaving).toFixed(4))
+});
+
+it('renders correct savings with Quarterly interest', () => {
+  const app = shallow(<App />).instance();
+  // set deposit to 10
+  app.updateDeposit({target: {value: 10}});
+  // leave monthlySavings at 0
+  // set interest to 1
+  app.updateInterest({target: {value: 1}});
+  // set interestFrequency to Quarterly
+  app.updateFrequency({target: {value: 2}});
+  // set numMonths to 3
+  app.setNumMonths(3)
+
+  app.render()
+  expect(app.savings).toBeTruthy()
+  expect(app.savings.length).toEqual(3)
+
+  // 1st month should not have gained any interest
+  var total = app.state.deposit + app.state.monthlySavings
+  var expectedSaving = total + 0 // no interest
+  expect(app.savings[0].month).toEqual(1)
+  expect(app.savings[0].amount).toEqual(parseFloat(expectedSaving).toFixed(4))
+
+  // 3rd month should include interest in earnings
+  var interestRate = parseFloat((app.state.interest/100)/12)
+  var totalInterest = total * interestRate * 3
+  expectedSaving = total + totalInterest
+  expect(app.savings[2].month).toEqual(3)
+  expect(app.savings[2].amount).toEqual(parseFloat(expectedSaving).toFixed(4))
 });

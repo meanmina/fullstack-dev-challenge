@@ -6,13 +6,13 @@ export default class SliderInput extends Component {
 	render() {
 		return (
 			<div className="fmz-slider">
-				<p>{this.props.value}%</p>
+				<p>{this.props.valueLabel}</p>
 				<input type="range"
 					id={this.props.name}
 					value={this.props.value}
-					min={0}
-					max={10}
-					step={0.25}
+					min={this.props.min}
+					max={this.props.max}
+					step={this.props.step}
 					onChange={this.props.onChange}/>
 			</div>
 		)
