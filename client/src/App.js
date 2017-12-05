@@ -2,29 +2,47 @@ import React, { Component } from 'react';
 import CurrencyInput from './components/CurrencyInput'
 import SliderInput from './components/SliderInput'
 import DisplayGraph from './components/DisplayGraph'
-import serverSide from './serverSide';
-import fixerApi from './fixerApi';
+import axios from "axios";
 import './App.css';
 
 const baseCurrency = "GBP"
+const defaultExchangeRate = 1
 
 class App extends Component {
   constructor(props) {
     super(props)
 
     this.months = 50*12
-    this.savings = []
     this.state = {
               deposit: 0,
               monthlySavings: 0,
               interest: 4,
               interestFrequency: this.getFrequency(1),
-              currency: {value: 1, label: "GBP", exchangeRate: 1}
+              currency: {value: 1, label: "GBP", exchangeRate: 1},
+              savings: []
             }
   }
 
+  setSavings(data) {
+    const state = Object.assign({}, this.state, {savings: data});
+    this.setState(state);
+  }
+
   requestSavings(deposit, interest, months, monthlySavings, interestFrequency, currency) {
-    this.savings = serverSide.requestPost(deposit, interest, months, monthlySavings, interestFrequency, currency).data
+    fetch('/savings', {
+      method: 'POST',
+      body: JSON.stringify({
+        sDeposit: deposit,
+        sInterest: interest,
+        sNumMonths: months,
+        sMonthlySavings: monthlySavings,
+        sInterestFrequency: interestFrequency,
+        sCurrency: currency
+      }),
+      headers: {"Content-Type": "application/json"}
+    }).then(function(res) {
+      return res.json();
+    }).then(json => { this.setSavings(JSON.parse(json).data); });
   }
 
   setNumMonths(months) {
@@ -102,12 +120,21 @@ class App extends Component {
   // we can use react-select for currency pick if we want a longer list of options
   updateCurrency({ target }) {
     var currency = this.getCurrency(parseFloat(target.value))
-    var exchangeRate = 1
-    fixerApi.requestCurrency(baseCurrency, currency.label).then(data => {
-      if (data.data)
-        exchangeRate = data.data
-      // currency validation
-      if (exchangeRate > 0) {
+    var exchangeRate = defaultExchangeRate
+    const currencyExchangeURL = `https://api.fixer.io/latest?base=${baseCurrency}&symbols=${currency}`
+
+    axios.get(currencyExchangeURL + currency.label)
+      .then(resp => {
+        var newRate = null
+        if (resp.data.rates)
+          newRate = resp.data.rates[currency.label]
+        // currency validation
+        if (newRate && newRate > 0) {
+          // set to default if no relevant rate returned
+          exchangeRate = newRate
+        }
+        console.log(exchangeRate)
+
         const state = Object.assign({}, this.state, {currency: {value: currency.value, label: currency.label, exchangeRate: exchangeRate}})
         this.requestSavings(this.state.deposit,
                             this.state.interest,
@@ -116,9 +143,7 @@ class App extends Component {
                             this.state.interestFrequency.numMonths,
                             exchangeRate)
         this.setState(state)
-        this.render()
-      }
-    })
+      });
   }
 
   getCurrency(x) {
@@ -157,7 +182,7 @@ class App extends Component {
           <SliderInput defaultValue={1} name="currency-input" value={this.state.currency.value} valueLabel={this.state.currency.label} min={1} max={3} step={1} onChange={this.updateCurrency.bind(this)}/>
 				</div>
 				<div className="financial-display">
-					<DisplayGraph data={this.savings}/>
+					<DisplayGraph data={this.state.savings}/>
 				</div>
       </div>
     );
