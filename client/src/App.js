@@ -11,6 +11,8 @@ const defaultExchangeRate = 1
 class App extends Component {
   constructor(props) {
     super(props)
+    // flag for testing
+    this.mock = props.mock
 
     this.months = 50*12
     this.state = {
@@ -29,6 +31,12 @@ class App extends Component {
   }
 
   requestSavings(deposit, interest, months, monthlySavings, interestFrequency, currency) {
+    // if this is a test then return mock data
+    if (this.mock) {
+      this.setSavings(this.getMockSavings());
+      return;
+    };
+
     fetch('/savings', {
       method: 'POST',
       body: JSON.stringify({
@@ -42,7 +50,30 @@ class App extends Component {
       headers: {"Content-Type": "application/json"}
     }).then(function(res) {
       return res.json();
-    }).then(json => { this.setSavings(JSON.parse(json).data); });
+    }).then(json => { this.setSavings(JSON.parse(json).data); 
+    }).catch(function(error) {
+      console.log("Failed to get savings response from server. Error: " + error);
+    });
+  }
+
+  getMockSavings() {
+    var testData = [{
+                  month: 1,
+                  amount:500
+                },
+                {
+                  month: 2,
+                  amount:700
+                },
+                {
+                  month: 3,
+                  amount:1000
+                },
+                {
+                  month: 4,
+                  amount:1500
+                }];
+    return testData;
   }
 
   setNumMonths(months) {
@@ -124,27 +155,29 @@ class App extends Component {
     const currencyExchangeURL = `https://api.fixer.io/latest?base=${baseCurrency}&symbols=${currency}`
 
     axios.get(currencyExchangeURL + currency.label)
-      .then(resp => {
-        var newRate = null
-        if (resp.data.rates)
-          newRate = resp.data.rates[currency.label]
-        // currency validation
-        if (newRate && newRate > 0) {
-          // set to default if no relevant rate returned
-          exchangeRate = newRate
-        }
-        console.log(exchangeRate)
+    .then(resp => {
+      var newRate = null
+      if (resp.data.rates)
+        newRate = resp.data.rates[currency.label]
+      // currency validation
+      if (newRate && newRate > 0) {
+        // set to default if no relevant rate returned
+        exchangeRate = newRate
+      }
+      console.log(exchangeRate)
 
-        const state = Object.assign({}, this.state, {currency: {value: currency.value, label: currency.label, exchangeRate: exchangeRate}})
-        this.requestSavings(this.state.deposit,
-                            this.state.interest,
-                            this.months,
-                            this.state.monthlySavings,
-                            this.state.interestFrequency.numMonths,
-                            exchangeRate)
-        this.setState(state)
-      });
-  }
+      const state = Object.assign({}, this.state, {currency: {value: currency.value, label: currency.label, exchangeRate: exchangeRate}})
+      this.requestSavings(this.state.deposit,
+                          this.state.interest,
+                          this.months,
+                          this.state.monthlySavings,
+                          this.state.interestFrequency.numMonths,
+                          exchangeRate)
+      this.setState(state)
+    }).catch(function(error) {
+      console.log("Failed to get currency response from fixer. Error: " + error);
+    });
+}
 
   getCurrency(x) {
     switch(x) {
